@@ -577,7 +577,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
   <div class="src-filter-bar">
     <span style="font-family:var(--mono);font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;">View:</span>
     <button class="src-btn active" data-filter="signals" onclick="setSrcFilter('signals')">Signals</button>
-    <button class="src-btn" data-filter="reading" onclick="setSrcFilter('reading')">Reading</button>
+    <button class="src-btn" data-filter="reading" onclick="setSrcFilter('reading')">Highlights</button>
     <button class="src-btn" data-filter="all" onclick="setSrcFilter('all')">Both</button>
     <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--txt3);" id="rw-nav-status"></span>
   </div>
@@ -695,7 +695,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
         <div style="margin-bottom:10px;display:flex;gap:6px;align-items:center;">
           <span style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3);">Pool:</span>
           <button class="src-btn active" data-filter="signals" onclick="window.CL_SRC='signals';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));renderPool();">Signals</button>
-          <button class="src-btn" data-filter="reading" onclick="window.CL_SRC='reading';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));renderPool();">Reading</button>
+          <button class="src-btn" data-filter="reading" onclick="window.CL_SRC='reading';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));renderPool();">Highlights</button>
           <button class="src-btn" data-filter="all" onclick="window.CL_SRC='all';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));renderPool();">Both</button>
         </div>
         <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:start;">
@@ -750,7 +750,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
         <div style="margin-bottom:10px;display:flex;gap:6px;align-items:center;">
           <span style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3);">Pool:</span>
           <button class="src-btn active" data-filter="signals" onclick="window.SC2_SRC='signals';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));sc2RenderPool();">Signals</button>
-          <button class="src-btn" data-filter="reading" onclick="window.SC2_SRC='reading';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));sc2RenderPool();">Reading</button>
+          <button class="src-btn" data-filter="reading" onclick="window.SC2_SRC='reading';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));sc2RenderPool();">Highlights</button>
           <button class="src-btn" data-filter="all" onclick="window.SC2_SRC='all';this.parentElement.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active',b===this));sc2RenderPool();">Both</button>
         </div>
         <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:start;">
@@ -807,14 +807,14 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
 <!-- ══ READING SECTION ══ -->
 <div id="rw-section" style="display:none;">
   <div id="rw-connect-bar" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;">
-    <span id="rw-status-text" style="font-family:var(--mono);font-size:11px;color:var(--txt2);flex:1;">Connect Readwise to access your reading highlights.</span>
+    <span id="rw-status-text" style="font-family:var(--mono);font-size:11px;color:var(--txt2);flex:1;">Connect Readwise to access your highlights.</span>
     <span id="rw-connected-badge" class="rw-header-badge" style="display:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;"></span>Readwise connected</span>
     <button class="rbtn" id="rw-connect-btn" onclick="showReadwiseConnect()">Connect Readwise</button>
     <button class="rbtn" id="rw-disconnect-btn" style="display:none;" onclick="disconnectReadwise()">Disconnect</button>
   </div>
 
   <div id="rw-not-loaded" style="text-align:center;padding:60px 20px;display:block;">
-    <div style="font-family:var(--serif);font-size:20px;margin-bottom:8px;">Your reading library</div>
+    <div style="font-family:var(--serif);font-size:20px;margin-bottom:8px;">Your highlights</div>
     <p style="font-family:var(--mono);font-size:11px;color:var(--txt2);max-width:360px;margin:0 auto 20px;">Connect your Readwise account to browse highlights, explore themes, and use them alongside your signals in clustering and scenario work.</p>
     <button class="rbtn" style="background:var(--blue);color:#fff;border-color:var(--blue);" onclick="showReadwiseConnect()">Connect Readwise →</button>
   </div>
@@ -1849,34 +1849,83 @@ function redrawArrows(){
 // ── Cluster rendering ─────────────────────────────────────────
 function renderPool(){
   const pool=document.getElementById('cl-pool');
+  if(!pool) return;
   pool.innerHTML='';
   const q=(document.getElementById('cl-search')?.value||'').toLowerCase();
-  const visible=ROWS.filter(r=>{
-    if(!q)return true;
-    return (r.content+' '+r.tags+' '+r.theme).toLowerCase().includes(q);
-  }).slice(0,120);
-  visible.forEach(r=>{
-    const td=TM[r.theme]||{c:'#888',bg:'#eee',fg:'#555'};
-    const txt=r.content.replace(/https?:\/\/\S+/g,'').trim();
-    const el=document.createElement('div');
-    el.className='cl-pool-item';
-    el.dataset.idx=r.idx;
-    el.innerHTML=`<div style="font-size:11px;line-height:1.4;color:var(--txt);">${eh(txt.slice(0,100))}${txt.length>100?'…':''}</div>
-      <div style="margin-top:3px;display:flex;gap:4px;align-items:center;">
-        <span style="font-family:var(--mono);font-size:9px;background:${td.bg};color:${td.fg};padding:1px 6px;border-radius:2px;">${r.theme.split(' ')[0]}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--txt3);">${r.date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
-      </div>`;
-    el.style.cssText='padding:7px 9px;background:var(--sur2);border:1px solid var(--bor);border-radius:4px;cursor:grab;border-left:3px solid '+td.c+';';
-    el.draggable=true;
-    el.addEventListener('dragstart',e=>{
-      e.dataTransfer.setData('text/plain',JSON.stringify({type:'pool',idx:r.idx}));
-      el.style.opacity='0.4';
-    });
-    el.addEventListener('dragend',()=>{el.style.opacity='1';});
-    pool.appendChild(el);
-  });
-}
+  const srcFilter=window.CL_SRC||'signals';
 
+  // ── Signals ──
+  if(srcFilter==='signals'||srcFilter==='all'){
+    if(srcFilter==='all'){
+      const lbl=document.createElement('div');
+      lbl.style.cssText='font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:4px 2px 2px;';
+      lbl.textContent='Signals';
+      pool.appendChild(lbl);
+    }
+    const visible=ROWS.filter(r=>{
+      if(!q)return true;
+      return (r.content+' '+r.tags+' '+r.theme).toLowerCase().includes(q);
+    }).slice(0,80);
+    visible.forEach(r=>{
+      const td=TM[r.theme]||{c:'#888',bg:'#eee',fg:'#555'};
+      const txt=r.content.replace(/https?:\/\/\S+/g,'').trim();
+      const el=document.createElement('div');
+      el.className='cl-pool-item';
+      el.dataset.idx=r.idx;
+      el.dataset.itemtype='signal';
+      el.innerHTML=`<div style="font-size:11px;line-height:1.4;color:var(--txt);">${eh(txt.slice(0,100))}${txt.length>100?'…':''}</div>
+        <div style="margin-top:3px;display:flex;gap:4px;align-items:center;">
+          <span style="font-family:var(--mono);font-size:9px;background:${td.bg};color:${td.fg};padding:1px 6px;border-radius:2px;">${r.theme.split(' ')[0]}</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--txt3);">${r.date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+        </div>`;
+      el.style.cssText='padding:7px 9px;background:var(--sur2);border:1px solid var(--bor);border-radius:4px;cursor:grab;border-left:3px solid '+td.c+';';
+      el.draggable=true;
+      el.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain',JSON.stringify({type:'pool',idx:r.idx}));
+        el.style.opacity='0.4';
+      });
+      el.addEventListener('dragend',()=>{el.style.opacity='1';});
+      pool.appendChild(el);
+    });
+  }
+
+  // ── Highlights ──
+  if((srcFilter==='reading'||srcFilter==='all')&&window.RW&&window.RW.isLoaded()){
+    if(srcFilter==='all'){
+      const lbl=document.createElement('div');
+      lbl.style.cssText='font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:8px 2px 2px;border-top:1px solid var(--bor);margin-top:6px;';
+      lbl.textContent='Highlights';
+      pool.appendChild(lbl);
+    }
+    const highlights=window.RW.getAllHighlights();
+    const visHls=highlights.filter(h=>{
+      if(!q)return true;
+      return (h.text+' '+h.title+' '+((h.themes||[]).join(' '))).toLowerCase().includes(q);
+    }).slice(0,60);
+    visHls.forEach(h=>{
+      const color=window.RW.themeColor((h.themes&&h.themes[0])||h.theme||'');
+      const el=document.createElement('div');
+      el.className='cl-pool-item';
+      el.dataset.hlid=h.id;
+      el.dataset.itemtype='highlight';
+      el.style.cssText='padding:7px 9px;background:#E5F1EA;border:1px solid #c0dbc8;border-radius:4px;cursor:grab;border-left:3px solid '+color+';';
+      el.innerHTML=`<div style="font-size:10px;color:${color};margin-bottom:2px;">📚 ${eh((h.themes&&h.themes[0])||h.theme||'')}</div>
+        <div style="font-size:11px;line-height:1.4;color:var(--txt);">${eh((h.text||'').slice(0,100))}${(h.text||'').length>100?'…':''}</div>`;
+      el.draggable=true;
+      el.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain',JSON.stringify({type:'pool-hl',hlid:h.id}));
+        el.style.opacity='0.4';
+      });
+      el.addEventListener('dragend',()=>{el.style.opacity='1';});
+      pool.appendChild(el);
+    });
+  } else if((srcFilter==='reading'||srcFilter==='all')&&(!window.RW||!window.RW.isLoaded())){
+    const msg=document.createElement('div');
+    msg.style.cssText='font-family:var(--mono);font-size:10px;color:var(--txt3);padding:10px 4px;';
+    msg.innerHTML='📚 <a href="#" onclick="event.preventDefault();showReadwiseConnect()" style="color:var(--blue);">Connect Readwise</a> to add highlights to the pool';
+    pool.appendChild(msg);
+  }
+}
 function filterPool(q){renderPool();}
 
 function addCluster(){
@@ -2542,45 +2591,79 @@ function sc2RenderPool(){
   const pool=document.getElementById('sc2-pool');if(!pool)return;
   pool.innerHTML='';
   const q=(document.getElementById('sc2-search')?.value||'').toLowerCase();
-  const visibleRows=ROWS.filter(r=>{
-    if(!q)return true;
-    return(r.content+' '+r.tags+' '+r.theme).toLowerCase().includes(q);
-  }).slice(0,80);
-  visibleRows.forEach(r=>{
-    const td=TM[r.theme]||{c:'#888',bg:'#eee',fg:'#555'};
-    const txt=r.content.replace(/https?:\/\/\S+/g,'').trim();
-    const el=document.createElement('div');
-    el.style.cssText='padding:5px 8px;background:var(--sur2);border:1px solid var(--bor);border-left:3px solid '+td.c+';border-radius:4px;cursor:grab;';
-    el.innerHTML=`<div style="font-size:10px;line-height:1.4;color:var(--txt);">${eh(txt.slice(0,90))}${txt.length>90?'…':''}</div>`;
-    el.draggable=true;
-    el.addEventListener('dragstart',e=>{
-      e.dataTransfer.setData('text/plain',JSON.stringify({type:'sc2-signal',idx:r.idx}));
-      el.style.opacity='0.4';
-    });
-    el.addEventListener('dragend',()=>{el.style.opacity='1';});
-    pool.appendChild(el);
-  });
+  const srcFilter=window.SC2_SRC||'signals';
 
-  // Tags in their own section
-  const tagPool=document.getElementById('sc2-tag-pool');
-  if(tagPool){
-    tagPool.innerHTML='';
-    const tagSet=new Set();
-    ROWS.forEach(r=>(r.tagList||[]).forEach(t=>{if(t&&t.length>2)tagSet.add(t);}));
-    if(!q)[...tagSet].slice(0,40).forEach(tag=>{
-      const el=document.createElement('span');
-      el.style.cssText='display:inline-block;padding:3px 8px;background:#EDE9F7;color:#3A3070;border:1px solid #C5BAE8;border-radius:10px;font-family:var(--mono);font-size:9px;cursor:grab;margin:2px;';
-      el.textContent=tag;el.draggable=true;
+  if(srcFilter==='signals'||srcFilter==='all'){
+    if(srcFilter==='all'){
+      const lbl=document.createElement('div');
+      lbl.style.cssText='font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:4px 2px 2px;';
+      lbl.textContent='Signals';
+      pool.appendChild(lbl);
+    }
+    const visibleRows=ROWS.filter(r=>{
+      if(!q)return true;
+      return(r.content+' '+r.tags+' '+r.theme).toLowerCase().includes(q);
+    }).slice(0,60);
+    visibleRows.forEach(r=>{
+      const td=TM[r.theme]||{c:'#888',bg:'#eee',fg:'#555'};
+      const txt=r.content.replace(/https?:\/\/\S+/g,'').trim();
+      const el=document.createElement('div');
+      el.style.cssText='padding:5px 8px;background:var(--sur2);border:1px solid var(--bor);border-left:3px solid '+td.c+';border-radius:4px;cursor:grab;margin-bottom:4px;';
+      el.innerHTML=`<div style="font-size:10px;line-height:1.4;color:var(--txt);">${eh(txt.slice(0,90))}${txt.length>90?'…':''}</div>`;
+      el.draggable=true;
       el.addEventListener('dragstart',e=>{
-        e.dataTransfer.setData('text/plain',JSON.stringify({type:'sc2-tag',tag}));
+        e.dataTransfer.setData('text/plain',JSON.stringify({type:'sc2-signal',idx:r.idx}));
         el.style.opacity='0.4';
       });
       el.addEventListener('dragend',()=>{el.style.opacity='1';});
-      tagPool.appendChild(el);
+      pool.appendChild(el);
     });
   }
-}
 
+  if((srcFilter==='reading'||srcFilter==='all')&&window.RW&&window.RW.isLoaded()){
+    if(srcFilter==='all'){
+      const lbl=document.createElement('div');
+      lbl.style.cssText='font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);padding:8px 2px 2px;border-top:1px solid var(--bor);margin-top:6px;';
+      lbl.textContent='Highlights';
+      pool.appendChild(lbl);
+    }
+    const highlights=window.RW.getAllHighlights();
+    const visHls=highlights.filter(h=>{
+      if(!q)return true;
+      return(h.text+' '+h.title).toLowerCase().includes(q);
+    }).slice(0,40);
+    visHls.forEach(h=>{
+      const color=window.RW.themeColor((h.themes&&h.themes[0])||h.theme||'');
+      const el=document.createElement('div');
+      el.style.cssText='padding:5px 8px;background:#E5F1EA;border:1px solid #c0dbc8;border-left:3px solid '+color+';border-radius:4px;cursor:grab;margin-bottom:4px;';
+      el.innerHTML=`<div style="font-size:9px;color:${color};margin-bottom:2px;">📚 ${eh((h.themes&&h.themes[0])||h.theme||'')}</div>
+        <div style="font-size:10px;line-height:1.4;color:var(--txt);">${eh((h.text||'').slice(0,90))}${(h.text||'').length>90?'…':''}</div>`;
+      el.draggable=true;
+      el.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain',JSON.stringify({type:'sc2-highlight',hlid:h.id}));
+        el.style.opacity='0.4';
+      });
+      el.addEventListener('dragend',()=>{el.style.opacity='1';});
+      pool.appendChild(el);
+    });
+  } else if((srcFilter==='reading'||srcFilter==='all')&&(!window.RW||!window.RW.isLoaded())){
+    const msg=document.createElement('div');
+    msg.style.cssText='font-family:var(--mono);font-size:10px;color:var(--txt3);padding:8px 4px;';
+    msg.innerHTML='📚 <a href="#" onclick="event.preventDefault();showReadwiseConnect()" style="color:var(--blue);">Connect Readwise</a> to add highlights';
+    pool.appendChild(msg);
+  }
+
+  // Tags
+  const tagPool=document.getElementById('sc2-tag-pool');
+  if(tagPool){
+    const allTags=[...new Set(ROWS.flatMap(r=>r.tagList||[]))].slice(0,60);
+    tagPool.innerHTML=allTags.map(t=>`
+      <div draggable="true" style="font-family:var(--mono);font-size:9px;padding:2px 7px;
+        background:var(--sur2);border:1px solid var(--bor);border-radius:3px;cursor:grab;"
+        ondragstart="event.dataTransfer.setData('text/plain',JSON.stringify({type:'sc2-tag',tag:'${t.replace(/'/g,"\'")}'}));this.style.opacity='0.4';"
+        ondragend="this.style.opacity='1';">${eh(t)}</div>`).join('');
+  }
+}
 function sc2FilterPool(q){sc2RenderPool();}
 
 function sc2CanvasDrop(e){e.preventDefault();}
@@ -4534,16 +4617,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Override renderPool and sc2RenderPool to use per-pool source filter
-var _rp_orig = renderPool;
-renderPool = function() {
-  window.SRC_FILTER = window.CL_SRC || window.SRC_FILTER || 'signals';
-  _rp_orig();
-};
-var _sc2rp_orig = sc2RenderPool;
-sc2RenderPool = function() {
-  window.SRC_FILTER = window.SC2_SRC || window.SRC_FILTER || 'signals';
-  _sc2rp_orig();
-};
+// Pool render functions handle source filtering internally
 
 // Init
 window.CL_SRC = 'signals';
