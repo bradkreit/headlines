@@ -521,6 +521,28 @@ header{border-bottom:1px solid var(--bor);padding:24px 0 18px;margin-bottom:24px
   <div class="dbody" id="dbody"></div>
 </div>
 
+
+<!-- Hidden stubs for reading dashboard elements (required by reading JS) -->
+<div id="app" style="display:none;"></div>
+<div id="token-screen" style="display:none;"></div>
+<div id="loading-screen" style="display:none;"></div>
+<div id="loading-msg" style="display:none;"></div>
+<div id="token-error" style="display:none;"></div>
+<div id="connect-btn" style="display:none;"></div>
+<div id="token-input" style="display:none;"></div>
+<div id="hl-controls" style="display:none;"></div>
+<div id="badge" style="display:none;"></div>
+<div id="main" style="display:none;"></div>
+<div id="theme-sidebar" style="display:none;"></div>
+<div id="author-sidebar" style="display:none;"></div>
+<div id="book-dd-btn" style="display:none;"></div>
+<div id="book-dd-label" style="display:none;"></div>
+<div id="book-dd-options" style="display:none;"></div>
+<div id="book-dd-search" style="display:none;"></div>
+<div id="theme-dd-btn" style="display:none;"></div>
+<div id="theme-dd-label" style="display:none;"></div>
+<div id="theme-dd-options" style="display:none;"></div>
+
 <script>
 // Signals JS
 
@@ -3859,14 +3881,10 @@ loadAll();
     }
   };
 
-  // Suppress showPhase when embedded (no token screen needed)
-  var _showPhaseOrig = showPhase;
+  // Suppress showPhase when embedded — stubs exist but we don't want them activated
   showPhase = function(phase) {
-    // Only forward to original if standalone (not embedded)
-    if (document.getElementById('token-screen')) {
-      _showPhaseOrig(phase);
-    }
-    // If embedded (no token-screen), just let loadData resolve
+    // In embedded mode: completely suppress all phase transitions
+    // window.RWConnect handles auth instead of the standalone token screen
   };
 
   // loadData override for embedded mode — don't call showPhase
