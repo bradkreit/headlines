@@ -1,4 +1,3 @@
-// Cloudflare Pages Function — proxies Readwise API (no Node https module needed, CF uses native fetch)
 export async function onRequest(context) {
   const { request } = context;
   const CORS = {
