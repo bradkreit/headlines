@@ -3784,13 +3784,16 @@ loadAll();
   window.RWConnect = async function(token) {
     TOKEN = token;
     try {
-      await rwFetch('highlights', 1);
+      // Auth check first
+      var authCheck = await rwFetch('highlights', 1);
+      if (!authCheck || !authCheck.results) throw new Error('Invalid response from Readwise API. Check your token.');
       localStorage.setItem('rw_token', token);
+      // Load all data
       await loadData();
-      // Don't call showPhase - we're embedded, not standalone
       return true;
     } catch(e) {
       TOKEN = '';
+      console.error('RWConnect error:', e);
       throw e;
     }
   };
@@ -4020,20 +4023,38 @@ async function connectReadwise() {
   if (!token) { status.textContent = 'Please paste your token.'; status.className = 'rw-modal-status err'; return; }
   btn.disabled = true; btn.textContent = 'Connecting…';
   status.textContent = 'Verifying token…'; status.className = 'rw-modal-status';
-  try {
-    // Trigger reading JS load
-    if (window.RWConnect) {
-      await window.RWConnect(token);
-      status.textContent = 'Connected!'; status.className = 'rw-modal-status ok';
-      setTimeout(function() {
-        closeReadwiseConnect();
-        updateReadingLoadedState();
-        if (typeof renderPool === 'function') renderPool();
-        if (typeof sc2RenderPool === 'function') sc2RenderPool();
-      }, 800);
+
+  if (!window.RWConnect) {
+    status.textContent = 'Reading module not loaded. Please refresh the page.';
+    status.className = 'rw-modal-status err';
+    btn.disabled = false; btn.textContent = 'Connect';
+    return;
+  }
+
+  // Show live progress during the potentially slow fetch
+  var progressInterval = setInterval(function() {
+    var count = window.RW && window.RW.getAllHighlights ? window.RW.getAllHighlights().length : 0;
+    if (count > 0) {
+      status.textContent = 'Loading… ' + count.toLocaleString() + ' highlights fetched';
     }
+  }, 500);
+
+  try {
+    await window.RWConnect(token);
+    clearInterval(progressInterval);
+    var total = window.RW && window.RW.getAllHighlights ? window.RW.getAllHighlights().length : 0;
+    status.textContent = 'Connected! ' + total.toLocaleString() + ' highlights loaded.';
+    status.className = 'rw-modal-status ok';
+    setTimeout(function() {
+      closeReadwiseConnect();
+      updateReadingLoadedState();
+      if (typeof renderPool === 'function') renderPool();
+      if (typeof sc2RenderPool === 'function') sc2RenderPool();
+    }, 1200);
   } catch(e) {
-    status.textContent = e.message; status.className = 'rw-modal-status err';
+    clearInterval(progressInterval);
+    status.textContent = e.message || 'Connection failed. Check your token and try again.';
+    status.className = 'rw-modal-status err';
     btn.disabled = false; btn.textContent = 'Connect';
   }
 }
