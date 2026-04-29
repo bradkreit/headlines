@@ -284,9 +284,9 @@ header{border-bottom:1px solid var(--bor);padding:24px 0 18px;margin-bottom:24px
           </summary>
           <div style="background:var(--sur);border:1px solid var(--bor);border-top:none;border-radius:0 0 6px 6px;padding:18px 20px;">
             <div class="krow" style="margin-bottom:16px;">
-              <div class="kpi" id="k-all"><div class="kpi-lbl">Total signals</div><div class="kpi-val" id="kv-tot">—</div><div class="kpi-sub" id="kv-tot-s"></div></div>
-              <div class="kpi" id="k-top"><div class="kpi-lbl">Top theme</div><div class="kpi-val" id="kv-thm" style="font-size:16px;">—</div><div class="kpi-sub" id="kv-thm-s"></div></div>
-              <div class="kpi" id="k-pk"><div class="kpi-lbl">Peak month</div><div class="kpi-val" id="kv-pk">—</div><div class="kpi-sub" id="kv-pk-s"></div></div>
+              <div class="kpi" id="k-all"><div class="kpi-lbl">Total signals</div><div class="kpi-val" id="kv-tot">—</div><div class="kpi-sub" id="kv-rng">—</div></div>
+              <div class="kpi" id="k-top"><div class="kpi-lbl">Top theme</div><div class="kpi-val" id="kv-thm" style="font-size:16px;">—</div><div class="kpi-sub" id="kv-pct">—</div></div>
+              <div class="kpi" id="k-pk"><div class="kpi-lbl">Peak month</div><div class="kpi-val" id="kv-pk">—</div><div class="kpi-sub" id="kv-pks">—</div></div>
               <div class="kpi" id="k-rc"><div class="kpi-lbl">Recent (14 days)</div><div class="kpi-val" id="kv-rc">—</div><div class="kpi-sub" id="kv-rc-s"></div></div>
             </div>
             <div class="card" style="border:none;padding:0;">
@@ -304,14 +304,14 @@ header{border-bottom:1px solid var(--bor);padding:24px 0 18px;margin-bottom:24px
           <p style="font-size:11px;color:var(--txt3);margin-top:14px;font-family:var(--mono);">Diagonal = all signals for that theme. Off-diagonal = signals tagged with both themes.</p>
         </div>
         <div class="r2b">
-          <div class="card"><div class="ctitle">Strongest co-occurrences <span class="chint">click</span></div><div class="slist" id="hm-top"></div></div>
+          <div class="card"><div class="ctitle">Strongest co-occurrences <span class="chint">click</span></div><div class="slist" id="sc"></div></div>
           <div class="card"><div class="ctitle">Notable absences</div><div class="slist" id="ac"></div></div>
         </div>
       </div>
       <div class="tp" id="tp-wk">
         <div class="card">
           <div class="ctitle">Weekly executive summaries <span class="chint">click row</span></div>
-          <table class="wtbl"><thead><tr><th style="width:120px;">Week</th><th style="width:190px;">Themes</th><th>Key signals</th></tr></thead><tbody id="wtbl-body"></tbody></table>
+          <table class="wtbl"><thead><tr><th style="width:120px;">Week</th><th style="width:190px;">Themes</th><th>Key signals</th></tr></thead><tbody id="wb"></tbody></table>
         </div>
       </div>
       <div class="tp" id="tp-net">
