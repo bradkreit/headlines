@@ -161,7 +161,7 @@ header{border-bottom:1px solid var(--bor);padding:24px 0 18px;margin-bottom:24px
 .rw-modal-status.ok{color:var(--green);}
 
 /* ── Reading section tabs ── */
-#rw-section{display:none;}
+#rw-section{display:block;}
 #rw-section .tabs{margin-bottom:16px;}
 .rw-header-badge{font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid #c0dbc8;background:#eaf5ef;padding:3px 10px;border-radius:3px;display:inline-flex;align-items:center;gap:5px;}
 
@@ -453,7 +453,7 @@ header{border-bottom:1px solid var(--bor);padding:24px 0 18px;margin-bottom:24px
 
 
 <!-- ══ READING SECTION ══ -->
-<div id="rw-section">
+<div id="rw-section" style="display:none;">
   <div id="rw-connect-bar" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;">
     <span id="rw-status-text" style="font-family:var(--mono);font-size:11px;color:var(--txt2);flex:1;">Connect Readwise to access your reading highlights.</span>
     <span id="rw-connected-badge" class="rw-header-badge" style="display:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;"></span>Readwise connected</span>
@@ -3923,11 +3923,11 @@ function setSrcFilter(f) {
     if (rwSection) rwSection.style.display = 'none';
   } else if (f === 'reading') {
     if (sigSection) sigSection.style.display = 'none';
-    if (rwSection) rwSection.style.display = '';
+    if (rwSection) rwSection.style.display = 'block';
     updateReadingLoadedState();
   } else { // all
-    if (sigSection) sigSection.style.display = '';
-    if (rwSection) rwSection.style.display = '';
+    if (sigSection) sigSection.style.display = 'block';
+    if (rwSection) rwSection.style.display = 'block';
     updateReadingLoadedState();
   }
 
