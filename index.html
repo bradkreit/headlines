@@ -578,7 +578,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
     <span style="font-family:var(--mono);font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;">View:</span>
     <button class="src-btn active" data-filter="signals" onclick="setSrcFilter('signals')">Signals</button>
     <button class="src-btn" data-filter="reading" onclick="setSrcFilter('reading')">Highlights</button>
-    <button class="src-btn" data-filter="all" onclick="setSrcFilter('all')">Both</button>
+    <button class="src-btn" data-filter="all" onclick="setSrcFilter('all')">Integrated</button>
     <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--txt3);" id="rw-nav-status"></span>
   </div>
 
@@ -680,7 +680,10 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
       <div class="tp" id="tp-cl">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
           <button class="rbtn" onclick="addCluster()" style="background:var(--blue);color:#fff;border-color:var(--blue);">+ Add cluster</button>
-          <button class="rbtn" onclick="addDriver()">◇ Add driver</button>
+          <button class="rbtn" onclick="addFreeformEl('driver')" title="Add a driving force — diamond shape">◇ Driver</button>
+          <button class="rbtn" onclick="addFreeformEl('question')" title="Add an open question — pill shape">? Question</button>
+          <button class="rbtn" onclick="addFreeformEl('wildcard')" title="Add a wildcard / wild signal — star shape">✦ Wildcard</button>
+          <button class="rbtn" onclick="addFreeformEl('note')" title="Add a freeform note — rectangle">✎ Note</button>
           <button class="rbtn" id="tension-btn" onclick="toggleTensionMode()" title="Draw tension arrows between clusters">⇌ Tension mode</button>
           <button class="rbtn" onclick="clearCanvas()">Clear canvas</button>
           <button class="rbtn" onclick="saveLayout()">💾 Save layout</button>
@@ -700,7 +703,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
         </div>
         <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:start;">
           <div style="background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:12px;max-height:720px;overflow-y:auto;">
-            <div style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px;">Signal & reading pool</div>
+            <div style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px;">Signal & highlights pool</div>
             <input type="text" id="cl-search" placeholder="Filter…" oninput="filterPool(this.value)"
               style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 8px;border:1px solid var(--bor);border-radius:3px;background:var(--sur2);margin-bottom:8px;outline:none;">
             <div id="cl-pool" style="display:flex;flex-direction:column;gap:5px;"></div>
@@ -1650,6 +1653,258 @@ function showColorPicker(clId,anchorEl){
 }
 
 // ── Drivers ───────────────────────────────────────────────────
+/* ══════════════════════════════════════
+   FREEFORM CANVAS ELEMENTS
+   Types: driver (diamond), question (pill), wildcard (star), note (rect)
+══════════════════════════════════════ */
+
+// Color palettes per element type
+var FE_COLORS = {
+  driver:   [{bg:'#FBF0DE',border:'#B8760F',text:'#7A5009',label:'Amber'},
+             {bg:'#EAF1FB',border:'#2D5FA0',text:'#1A3A6B',label:'Blue'},
+             {bg:'#F0EAF8',border:'#7B4FA0',text:'#4A1F6B',label:'Purple'},
+             {bg:'#E5F1EA',border:'#2A7A52',text:'#1A5C38',label:'Green'},
+             {bg:'#FAE8E4',border:'#C84B2F',text:'#8B1A0A',label:'Red'}],
+  question: [{bg:'#F0EAF8',border:'#7B4FA0',text:'#4A1F6B',label:'Purple'},
+             {bg:'#EAF1FB',border:'#2D5FA0',text:'#1A3A6B',label:'Blue'},
+             {bg:'#E5F1EA',border:'#2A7A52',text:'#1A5C38',label:'Green'},
+             {bg:'#FBF0DE',border:'#B8760F',text:'#7A5009',label:'Amber'},
+             {bg:'#FAE8E4',border:'#C84B2F',text:'#8B1A0A',label:'Red'}],
+  wildcard: [{bg:'#FAE8E4',border:'#C84B2F',text:'#8B1A0A',label:'Red'},
+             {bg:'#F0EAF8',border:'#7B4FA0',text:'#4A1F6B',label:'Purple'},
+             {bg:'#FBF0DE',border:'#B8760F',text:'#7A5009',label:'Amber'},
+             {bg:'#E5F1EA',border:'#2A7A52',text:'#1A5C38',label:'Green'},
+             {bg:'#EAF1FB',border:'#2D5FA0',text:'#1A3A6B',label:'Blue'}],
+  note:     [{bg:'#FFFFF0',border:'#C8B800',text:'#5A5000',label:'Yellow'},
+             {bg:'#F0F0F0',border:'#909090',text:'#404040',label:'Gray'},
+             {bg:'#E5F1EA',border:'#2A7A52',text:'#1A5C38',label:'Green'},
+             {bg:'#EAF1FB',border:'#2D5FA0',text:'#1A3A6B',label:'Blue'},
+             {bg:'#FAE8E4',border:'#C84B2F',text:'#8B1A0A',label:'Red'}]
+};
+
+// Storage for freeform elements
+if(!window.clFreeform) window.clFreeform = [];
+
+function addFreeformEl(type) {
+  // Show color picker inline
+  var existing = document.getElementById('fe-color-picker');
+  if(existing) existing.remove();
+
+  var colors = FE_COLORS[type] || FE_COLORS.note;
+  var picker = document.createElement('div');
+  picker.id = 'fe-color-picker';
+  picker.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
+    + 'background:var(--sur);border:1px solid var(--bor);border-radius:8px;padding:16px 20px;'
+    + 'z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.15);min-width:280px;';
+
+  var typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+  picker.innerHTML = '<div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);margin-bottom:10px;">Add ' + typeLabel + '</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:14px;">'
+    + colors.map(function(c,i) {
+        return '<div class="fe-color-swatch" data-idx="' + i + '" '
+          + 'style="width:28px;height:28px;border-radius:50%;background:' + c.bg + ';border:2px solid ' + c.border + ';cursor:pointer;" title="' + c.label + '">'  
+          + '</div>';
+      }).join('')
+    + '</div>'
+    + '<input id="fe-text-input" type="text" placeholder="Label (optional)…" '
+    + 'style="width:100%;padding:7px 10px;border:1px solid var(--bor);border-radius:4px;'
+    + 'font-family:var(--mono);font-size:12px;background:var(--sur2);outline:none;margin-bottom:10px;">'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + '<button id="fe-cancel-btn" class="rbtn">Cancel</button>'
+    + '<button id="fe-add-btn" class="rbtn" style="background:var(--blue);color:#fff;border-color:var(--blue);">Add to canvas</button>'
+    + '</div>';
+
+  document.body.appendChild(picker);
+
+  var selectedColor = 0;
+  var swatches = picker.querySelectorAll('.fe-color-swatch');
+  swatches[0].style.outline = '3px solid ' + colors[0].border;
+  swatches.forEach(function(sw) {
+    sw.addEventListener('click', function() {
+      selectedColor = parseInt(sw.dataset.idx);
+      swatches.forEach(function(s) { s.style.outline = 'none'; });
+      sw.style.outline = '3px solid ' + colors[selectedColor].border;
+    });
+  });
+
+  document.getElementById('fe-cancel-btn').addEventListener('click', function() { picker.remove(); });
+  document.getElementById('fe-add-btn').addEventListener('click', function() {
+    var text = (document.getElementById('fe-text-input').value || typeLabel).trim();
+    var canvas = document.getElementById('cl-canvas');
+    var rect = canvas.getBoundingClientRect();
+    var fe = {
+      id: 'fe_' + Date.now(),
+      type: type,
+      text: text,
+      colorIdx: selectedColor,
+      x: rect.width / 2 + (Math.random() - 0.5) * 200,
+      y: rect.height / 2 + (Math.random() - 0.5) * 150
+    };
+    if(!window.clFreeform) window.clFreeform = [];
+    window.clFreeform.push(fe);
+    renderFreeformEl(fe);
+    saveFreeform();
+    picker.remove();
+  });
+
+  document.getElementById('fe-text-input').focus();
+  document.getElementById('fe-text-input').addEventListener('keydown', function(e) {
+    if(e.key === 'Enter') document.getElementById('fe-add-btn').click();
+    if(e.key === 'Escape') picker.remove();
+  });
+}
+
+function renderFreeformEl(fe) {
+  var inner = document.getElementById('cl-canvas-inner');
+  var existing = document.getElementById(fe.id);
+  if(existing) existing.remove();
+
+  var colors = FE_COLORS[fe.type] || FE_COLORS.note;
+  var c = colors[fe.colorIdx] || colors[0];
+  var el = document.createElement('div');
+  el.id = fe.id;
+  el.style.cssText = 'position:absolute;left:' + fe.x + 'px;top:' + fe.y + 'px;'
+    + 'transform:translate(-50%,-50%);z-index:15;cursor:move;user-select:none;';
+
+  var inner_html = '';
+
+  if(fe.type === 'driver') {
+    var size = 100;
+    inner_html = '<div style="position:relative;width:' + size + 'px;height:' + size + 'px;">'
+      + '<svg width="' + size + '" height="' + size + '" style="position:absolute;inset:0;">'
+      + '<polygon points="' + (size/2) + ',4 ' + (size-4) + ',' + (size/2) + ' ' + (size/2) + ',' + (size-4) + ' 4,' + (size/2) + '"'
+      + ' fill="' + c.bg + '" stroke="' + c.border + '" stroke-width="2"/></svg>'
+      + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;">'
+      + '<span style="font-family:var(--mono);font-size:9px;color:' + c.text + ';line-height:1.3;word-break:break-word;max-width:60px;">'
+      + eh(fe.text.slice(0,40)) + '</span></div>'
+      + feBtns(fe.id, c.border) + '</div>';
+
+  } else if(fe.type === 'question') {
+    inner_html = '<div style="position:relative;min-width:100px;max-width:160px;padding:8px 14px;'
+      + 'background:' + c.bg + ';border:2px solid ' + c.border + ';border-radius:20px;'
+      + 'text-align:center;">'
+      + '<span style="font-family:var(--mono);font-size:10px;color:' + c.text + ';line-height:1.4;display:block;">'
+      + '<span style="font-size:12px;margin-right:4px;">?</span>' + eh(fe.text.slice(0,60)) + '</span>'
+      + feBtns(fe.id, c.border) + '</div>';
+
+  } else if(fe.type === 'wildcard') {
+    var sz = 90;
+    var pts = [];
+    for(var i=0;i<10;i++) {
+      var angle = (i * Math.PI / 5) - Math.PI/2;
+      var r2 = (i % 2 === 0) ? sz/2-4 : sz/4;
+      pts.push((sz/2 + Math.cos(angle)*r2).toFixed(1) + ',' + (sz/2 + Math.sin(angle)*r2).toFixed(1));
+    }
+    inner_html = '<div style="position:relative;width:' + sz + 'px;height:' + sz + 'px;">'
+      + '<svg width="' + sz + '" height="' + sz + '" style="position:absolute;inset:0;">'
+      + '<polygon points="' + pts.join(' ') + '" fill="' + c.bg + '" stroke="' + c.border + '" stroke-width="2"/></svg>'
+      + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;">'
+      + '<span style="font-family:var(--mono);font-size:9px;color:' + c.text + ';line-height:1.3;word-break:break-word;">'
+      + eh(fe.text.slice(0,30)) + '</span></div>'
+      + feBtns(fe.id, c.border) + '</div>';
+
+  } else { // note
+    inner_html = '<div style="position:relative;min-width:110px;max-width:180px;padding:10px 12px;'
+      + 'background:' + c.bg + ';border:1.5px solid ' + c.border + ';border-radius:4px;'
+      + 'box-shadow:2px 2px 0 ' + c.border + '40;">'
+      + '<span style="font-family:var(--mono);font-size:10px;color:' + c.text + ';line-height:1.5;display:block;">'
+      + eh(fe.text.slice(0,120)) + '</span>'
+      + feBtns(fe.id, c.border) + '</div>';
+  }
+
+  el.innerHTML = inner_html;
+
+  // Drag to move
+  el.addEventListener('mousedown', function(e) {
+    if(e.target.tagName === 'BUTTON') return;
+    if(clTensionMode) { clTensionClick(fe.id, 'freeform'); return; }
+    e.preventDefault();
+    var canvas = document.getElementById('cl-canvas');
+    var cr = canvas.getBoundingClientRect();
+    function onMove(ev) {
+      fe.x = ev.clientX - cr.left;
+      fe.y = ev.clientY - cr.top;
+      el.style.left = fe.x + 'px';
+      el.style.top = fe.y + 'px';
+      if(typeof redrawArrows === 'function') redrawArrows();
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      saveFreeform();
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  inner.appendChild(el);
+}
+
+function feBtns(feId, borderColor) {
+  return '<button onclick="deleteFreeformEl(\'' + feId + '\')" title="Delete" '
+    + 'style="position:absolute;top:-8px;right:-8px;background:var(--sur);border:1px solid var(--bor);'
+    + 'border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;color:var(--txt2);'
+    + 'display:flex;align-items:center;justify-content:center;z-index:5;">✕</button>'
+    + '<button ondblclick="editFreeformEl(\'' + feId + '\')" title="Double-click to edit" '
+    + 'style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);'
+    + 'background:none;border:none;cursor:text;font-size:8px;color:' + borderColor + ';font-family:var(--mono);">✎</button>';
+}
+
+function deleteFreeformEl(feId) {
+  window.clFreeform = (window.clFreeform||[]).filter(function(f) { return f.id !== feId; });
+  var el = document.getElementById(feId);
+  if(el) el.remove();
+  saveFreeform();
+}
+
+function editFreeformEl(feId) {
+  var fe = (window.clFreeform||[]).find(function(f) { return f.id === feId; });
+  if(!fe) return;
+  var t = prompt('Edit label:', fe.text);
+  if(t !== null && t.trim()) {
+    fe.text = t.trim();
+    renderFreeformEl(fe);
+    saveFreeform();
+  }
+}
+
+function saveFreeform() {
+  var key = typeof CL_KEY !== 'undefined' ? CL_KEY + '_freeform' : 'hftf_freeform';
+  try { localStorage.setItem(key, JSON.stringify(window.clFreeform||[])); } catch(e) {}
+}
+
+function loadFreeform() {
+  var key = typeof CL_KEY !== 'undefined' ? CL_KEY + '_freeform' : 'hftf_freeform';
+  try {
+    var saved = localStorage.getItem(key);
+    if(saved) {
+      window.clFreeform = JSON.parse(saved);
+      (window.clFreeform||[]).forEach(function(fe) { renderFreeformEl(fe); });
+    }
+  } catch(e) {}
+}
+
+// Patch initCluster to also load freeform elements
+var _origInitCluster = typeof initCluster !== 'undefined' ? initCluster : null;
+if(typeof initCluster !== 'undefined') {
+  var _initClusterBase = initCluster;
+  initCluster = function() {
+    _initClusterBase();
+    setTimeout(loadFreeform, 100);
+  };
+}
+
+// Patch clearCanvas to also clear freeform elements
+var _origClearCanvas = typeof clearCanvas !== 'undefined' ? clearCanvas : null;
+if(typeof clearCanvas !== 'undefined') {
+  var _clearCanvasBase = clearCanvas;
+  clearCanvas = function() {
+    _clearCanvasBase();
+    window.clFreeform = [];
+    saveFreeform();
+  };
+}
+
 function addDriver(){
   const text=prompt('Driver name / description:','');
   if(!text||!text.trim())return;
