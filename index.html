@@ -625,6 +625,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
         <div class="tab" onclick="sw('hm')">Co-occurrence</div>
         <div class="tab" onclick="sw('wk')">Weekly summaries</div>
         <div class="tab" onclick="sw('net')">Network</div>
+        <div class="tab" onclick="sw('conv')" style="border-left:1px solid var(--bor);margin-left:4px;padding-left:12px;">&#8644; Convergence</div>
         <div class="tab" onclick="sw('cl')">Clusters</div>
         <div class="tab" onclick="sw('sc2')">Scenarios</div>
       </div>
@@ -1644,7 +1645,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD();});
 function sw(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
-  const idx=['ov','hm','wk','net','cl','sc2'].indexOf(name);
+  const idx=['ov','hm','wk','net','conv','cl','sc2'].indexOf(name);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('tp-'+name).classList.add('active');
   if(name==='net')renderNet('theme');
@@ -3944,13 +3945,7 @@ loadAll();
       +'<button id="concept-clear" class="btn-sm" style="'+(S.conceptQuery?'':'display:none')+'">Clear</button>'
       +'</div>'
       +'</div>'
-      +(S.conceptQuery&&results.length?
-        '<div class="concept-meta">'+results.length+' highlights across '+books.length+' books</div>'
-        +'<div class="concept-book-pills">'+books.map(function(b){
-          return '<span class="thread-book-pill">'+esc(b.length>40?b.slice(0,38)+'…':b)+'</span>';
-        }).join('')+'</div>'
-        +'<div class="flat-wrap">'+results.map(function(h){return hlCard(h,true);}).join('')+'</div>'
-        :S.conceptQuery?'<div class="empty">No highlights match "'+esc(S.conceptQuery)+'".</div>':'')
+      +'<div id="concept-results-area"></div>'
       +'</div>';
   }
 
@@ -4401,7 +4396,14 @@ loadAll();
     var hlc=document.getElementById('hl-controls');
     if(hlc) hlc.style.display=(S.tab==='highlights')?'contents':'none';
 
+    // In embedded mode, render into the active reading tab container
     var mc=document.getElementById('main');
+    var activeTab=document.querySelector('.rw-tp.active');
+    if(activeTab&&activeTab.id&&activeTab.id.indexOf('rw-tp-')===0){
+      var containerId=activeTab.id.replace('rw-tp-','rw-main-');
+      var embedded=document.getElementById(containerId);
+      if(embedded) mc=embedded;
+    }
 
     if(S.tab==='network'){
       if(NET.animFrame) cancelAnimationFrame(NET.animFrame);
@@ -4441,15 +4443,44 @@ loadAll();
     var inp=document.getElementById('concept-input');
     var clr=document.getElementById('concept-clear');
     if(inp){
+      // Set value from state (in case re-rendered)
+      inp.value=S.conceptQuery||'';
       inp.focus();
       inp.addEventListener('input',function(){
         S.conceptQuery=this.value;
         S.ri=null;
         if(clr) clr.style.display=this.value?'':'none';
-        render();
+        updateConceptResults();
       });
     }
-    if(clr) clr.addEventListener('click',function(){ S.conceptQuery=''; S.ri=null; render(); });
+    if(clr) clr.addEventListener('click',function(){
+      S.conceptQuery='';
+      S.ri=null;
+      var inp2=document.getElementById('concept-input');
+      if(inp2) inp2.value='';
+      clr.style.display='none';
+      updateConceptResults();
+    });
+  }
+
+  function updateConceptResults(){
+    // Update just the results area without destroying the input
+    var resultsArea=document.getElementById('concept-results-area');
+    if(!resultsArea) return;
+    var results=S.conceptQuery?filtered():[];
+    var books=Array.from(new Set(results.map(function(h){return h.title;})));
+    if(!S.conceptQuery){
+      resultsArea.innerHTML='';
+      return;
+    }
+    var metaHtml=results.length
+      ?'<div class="concept-meta">'+results.length+' highlights across '+books.length+' books</div>'
+       +'<div class="concept-book-pills">'+books.slice(0,20).map(function(b){return'<span class="thread-book-pill">'+esc(b.length>40?b.slice(0,38)+"\u2026":b)+'</span>';}).join('')+'</div>'
+      :'';
+    var bodyHtml=results.length
+      ?'<div class="flat-wrap">'+results.map(function(x){return hlCard(x,true);}).join('')+'</div>'
+      :'<div class="empty">No highlights match &ldquo;'+esc(S.conceptQuery)+'&rdquo;.</div>';
+    resultsArea.innerHTML=metaHtml+bodyHtml;
   }
 
   /* ══════════════════════════════════════
@@ -4607,6 +4638,7 @@ loadAll();
     } else if (S.tab === 'concept') {
       targetEl.innerHTML = renderConceptSearch();
       bindConceptEvents();
+      setTimeout(updateConceptResults, 0);
 
     } else if (S.tab === 'network') {
       // Cancel any existing animation
