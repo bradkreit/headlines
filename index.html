@@ -549,6 +549,38 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
 .rw-tp{display:none;}.rw-tp.active{display:block;}
 /* Reading CSS variables compatibility */
 #rw-section{--surface:var(--sur);--surface2:var(--sur2);--border:var(--bor);--text:var(--txt);--muted:var(--txt2);--faint:var(--txt3);--accent:#2A7A52;--accent-l:#E5F1EA;--accent-t:#1A5C38;--info:var(--blue);--info-l:#E6EEF7;--r:4px;--rl:6px;}
+
+/* ── Convergence tab ── */
+.conv-tab { border-left: 1px solid var(--bor); margin-left: 4px; padding-left: 12px; }
+.conv-header { padding: 4px 0 16px; border-bottom: 1px solid var(--bor); margin-bottom: 0; }
+.conv-title { font-family: var(--serif); font-size: 22px; margin-bottom: 6px; }
+.conv-desc { font-size: 12px; color: var(--txt2); line-height: 1.7; max-width: 700px; }
+.conv-bridges-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--txt3); margin-bottom: 12px; }
+.conv-bridge { background: var(--sur); border: 1px solid var(--bor); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.conv-bridge-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--sur2); border-bottom: 1px solid var(--bor); cursor: pointer; }
+.conv-bridge-header:hover { background: var(--sur3); }
+.conv-bridge-score { font-family: var(--mono); font-size: 10px; background: var(--blue); color: #fff; border-radius: 10px; padding: 2px 8px; flex-shrink: 0; }
+.conv-bridge-labels { font-family: var(--mono); font-size: 11px; color: var(--txt2); flex: 1; }
+.conv-bridge-body { display: grid; grid-template-columns: 1fr 1fr; }
+.conv-side { padding: 12px 16px; }
+.conv-side-sig { border-right: 1px solid var(--bor); }
+.conv-side-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--txt3); margin-bottom: 8px; }
+.conv-item { font-size: 12px; line-height: 1.65; color: var(--txt); padding: 8px 10px; background: var(--sur2); border-radius: 4px; margin-bottom: 6px; border-left: 3px solid var(--bor2); }
+.conv-item-meta { font-family: var(--mono); font-size: 9px; color: var(--txt3); margin-top: 4px; }
+.conv-item-hl { border-left-color: #2A7A52; background: #E5F1EA; }
+.conv-shared-words { font-family: var(--mono); font-size: 9px; color: var(--blue); margin-top: 6px; }
+/* Matrix */
+.conv-matrix-wrap { background: var(--sur); border: 1px solid var(--bor); border-radius: 8px; padding: 16px; }
+.conv-matrix-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--txt3); margin-bottom: 4px; }
+.conv-matrix-hint { font-size: 11px; color: var(--txt3); margin-bottom: 14px; }
+.conv-matrix table { border-collapse: collapse; font-size: 10px; }
+.conv-matrix th { font-family: var(--mono); font-size: 9px; color: var(--txt2); padding: 4px 8px; text-align: left; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.conv-matrix th.col-header { writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); max-width: 20px; padding: 8px 4px; height: 110px; vertical-align: bottom; }
+.conv-matrix td { width: 32px; height: 28px; border: 1px solid var(--bor); cursor: pointer; transition: opacity .1s; position: relative; }
+.conv-matrix td:hover { outline: 2px solid var(--blue); z-index: 2; }
+.conv-matrix td.empty { background: var(--sur2); cursor: default; }
+/* Detail panel */
+#conv-detail-body .conv-side { padding: 14px 18px; max-height: 500px; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -805,6 +837,42 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
       </div>
     </div>
   </div>
+
+      <!-- ══ CONVERGENCE TAB ══ -->
+      <div class="tp" id="tp-conv">
+        <div id="conv-wrap">
+          <div class="conv-header">
+            <h2 class="conv-title">Signal &amp; Reading Convergence</h2>
+            <p class="conv-desc">Where your signals and reading highlights point at the same underlying ideas. Signal themes are rows; reading themes are columns. Click any cell to explore the overlap.</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;">
+              <button class="rbtn" onclick="buildConvergence()" id="conv-build-btn" style="background:var(--blue);color:#fff;border-color:var(--blue);">⇄ Analyze convergence</button>
+              <span id="conv-status" style="font-family:var(--mono);font-size:11px;color:var(--txt2);"></span>
+            </div>
+          </div>
+          <div id="conv-not-ready" style="margin-top:20px;padding:24px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--txt2);">
+            Connect Readwise and load signals first, then click "Analyze convergence" to see where your signals and reading overlap.
+          </div>
+          <div id="conv-content" style="display:none;margin-top:16px;">
+            <!-- Strongest bridges -->
+            <div id="conv-bridges" style="margin-bottom:24px;"></div>
+            <!-- Matrix -->
+            <div class="conv-matrix-wrap">
+              <div class="conv-matrix-title">Full convergence matrix</div>
+              <p class="conv-matrix-hint">Cell intensity = conceptual overlap strength. Click any cell to see matching items.</p>
+              <div id="conv-matrix" style="overflow-x:auto;"></div>
+            </div>
+          </div>
+          <!-- Detail drawer -->
+          <div id="conv-detail" style="display:none;margin-top:16px;background:var(--sur);border:1px solid var(--bor);border-radius:8px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--sur2);border-bottom:1px solid var(--bor);">
+              <div id="conv-detail-title" style="font-family:var(--mono);font-size:11px;color:var(--txt2);flex:1;"></div>
+              <button class="rbtn" onclick="document.getElementById('conv-detail').style.display='none'">Close ✕</button>
+            </div>
+            <div id="conv-detail-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0;"></div>
+          </div>
+        </div>
+      </div>
+
 
 
 <!-- ══ READING SECTION ══ -->
@@ -4605,6 +4673,336 @@ loadAll();
 
 })();
 
+
+
+// ══ CONVERGENCE ENGINE ══
+/* ══════════════════════════════════════
+   CONVERGENCE ENGINE
+   Cross-analysis of signal themes and reading highlight themes
+══════════════════════════════════════ */
+
+var STOPWORDS_CONV = new Set(
+  'the and for are but not you all can had her was one our out did get has him his how its may now off only say she too use via who yet your from that this with they been have into more also when where what were about after before some than them then their there these those such much many most used just like will even well said each made both time back over been just very been also could should would'.split(' ')
+);
+
+function getConvWords(text) {
+  return (text || '').toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter(function(w) { return w.length > 4 && !STOPWORDS_CONV.has(w); });
+}
+
+function wordOverlap(wordsA, wordsB) {
+  var setA = new Set(wordsA);
+  return wordsB.filter(function(w) { return setA.has(w); });
+}
+
+function buildConvergence() {
+  var btn = document.getElementById('conv-build-btn');
+  var status = document.getElementById('conv-status');
+  var notReady = document.getElementById('conv-not-ready');
+  var content = document.getElementById('conv-content');
+
+  // Check prerequisites
+  if (!window.RW || !window.RW.isLoaded()) {
+    status.textContent = 'Please connect Readwise first.';
+    status.style.color = '#C84B2F';
+    return;
+  }
+  if (!window.ROWS || !ROWS.length) {
+    status.textContent = 'Signals not loaded yet — please wait.';
+    status.style.color = '#C84B2F';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+  status.textContent = '';
+  status.style.color = '';
+
+  // Run async so UI updates
+  setTimeout(function() {
+    try {
+      var result = computeConvergence();
+      renderConvergence(result);
+      notReady.style.display = 'none';
+      content.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '⇄ Re-analyze';
+      status.textContent = 'Found ' + result.bridges.length + ' convergence bridges across '
+        + result.sigThemes.length + ' signal themes × ' + result.hlThemes.length + ' highlight themes.';
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = '⇄ Analyze convergence';
+      status.textContent = 'Error: ' + e.message;
+      status.style.color = '#C84B2F';
+    }
+  }, 50);
+}
+
+function computeConvergence() {
+  var highlights = window.RW.getAllHighlights();
+  var signals = window.ROWS;
+
+  // Pre-compute words for each signal and highlight
+  var sigWords = signals.map(function(r) {
+    return getConvWords((r.content || '') + ' ' + (r.tags || ''));
+  });
+  var hlWords = highlights.map(function(h) {
+    return getConvWords((h.text || '') + ' ' + (h.note || ''));
+  });
+
+  // Get unique signal themes and highlight themes
+  var sigThemeSet = {};
+  signals.forEach(function(r) {
+    if (r.theme) sigThemeSet[r.theme] = true;
+  });
+  var sigThemes = Object.keys(sigThemeSet).sort();
+
+  var hlThemeSet = {};
+  highlights.forEach(function(h) {
+    var t = (h.themes && h.themes[0]) || h.theme || 'Other';
+    hlThemeSet[t] = true;
+  });
+  var hlThemes = Object.keys(hlThemeSet).sort();
+
+  // Build theme → items lookup
+  var sigsByTheme = {};
+  signals.forEach(function(r, i) {
+    if (!sigsByTheme[r.theme]) sigsByTheme[r.theme] = [];
+    sigsByTheme[r.theme].push({ row: r, words: sigWords[i] });
+  });
+
+  var hlsByTheme = {};
+  highlights.forEach(function(h, i) {
+    var t = (h.themes && h.themes[0]) || h.theme || 'Other';
+    if (!hlsByTheme[t]) hlsByTheme[t] = [];
+    hlsByTheme[t].push({ h: h, words: hlWords[i] });
+  });
+
+  // Compute matrix: for each (sigTheme, hlTheme) pair find best matches
+  var matrix = {};
+  var bridges = [];
+
+  sigThemes.forEach(function(st) {
+    matrix[st] = {};
+    var sigs = sigsByTheme[st] || [];
+
+    hlThemes.forEach(function(ht) {
+      var hls = hlsByTheme[ht] || [];
+      if (!sigs.length || !hls.length) { matrix[st][ht] = { score: 0, pairs: [] }; return; }
+
+      // Find top pairs by word overlap
+      var pairs = [];
+      sigs.forEach(function(s) {
+        hls.forEach(function(h) {
+          var shared = wordOverlap(s.words, h.words);
+          if (shared.length >= 2) {
+            pairs.push({ sig: s.row, hl: h.h, shared: shared, score: shared.length });
+          }
+        });
+      });
+
+      pairs.sort(function(a, b) { return b.score - a.score; });
+      var topPairs = pairs.slice(0, 8);
+      var score = pairs.reduce(function(sum, p) { return sum + Math.min(p.score, 8); }, 0);
+
+      matrix[st][ht] = { score: score, pairs: topPairs };
+
+      if (score > 0 && topPairs.length > 0) {
+        bridges.push({ sigTheme: st, hlTheme: ht, score: score, pairs: topPairs });
+      }
+    });
+  });
+
+  // Sort bridges by score
+  bridges.sort(function(a, b) { return b.score - a.score; });
+
+  return { matrix: matrix, bridges: bridges, sigThemes: sigThemes, hlThemes: hlThemes };
+}
+
+function renderConvergence(result) {
+  renderBridges(result.bridges.slice(0, 8), result);
+  renderMatrix(result);
+}
+
+function renderBridges(bridges, result) {
+  var el = document.getElementById('conv-bridges');
+  if (!bridges.length) { el.innerHTML = ''; return; }
+
+  // Normalize scores for display
+  var maxScore = bridges[0].score;
+
+  el.innerHTML = '<div class="conv-bridges-title">Strongest convergence points — where signals and reading meet</div>'
+    + bridges.map(function(b, i) {
+        var pct = Math.round(b.score / maxScore * 100);
+        var topPair = b.pairs[0];
+        var sigColor = getSigThemeColor(b.sigTheme);
+        var hlColor = window.RW ? window.RW.themeColor(b.hlTheme) : '#2A7A52';
+
+        return '<div class="conv-bridge">'
+          + '<div class="conv-bridge-header" onclick="showConvDetail(' + JSON.stringify(b.sigTheme).replace(/</g,'\\u003c') + ',' + JSON.stringify(b.hlTheme).replace(/</g,'\\u003c') + ',convResult)">'
+          + '<span class="conv-bridge-score">' + pct + '% overlap</span>'
+          + '<span class="conv-bridge-labels">'
+          + '<span style="color:' + sigColor + ';font-weight:500;">' + eh(b.sigTheme) + '</span>'
+          + ' <span style="color:var(--txt3);">⇄</span> '
+          + '<span style="color:' + hlColor + ';font-weight:500;">' + eh(b.hlTheme) + '</span>'
+          + '</span>'
+          + '<span style="font-family:var(--mono);font-size:9px;color:var(--txt3);">' + b.pairs.length + ' item pairs · click to explore</span>'
+          + '</div>'
+          + (i < 3 ? '<div class="conv-bridge-body">'
+            + '<div class="conv-side conv-side-sig">'
+            + '<div class="conv-side-label">📡 Signal</div>'
+            + '<div class="conv-item">' + eh((topPair.sig.content || '').replace(/https?:\/\/\S+/g,'').trim().slice(0, 160)) + '…'
+            + '<div class="conv-item-meta">' + eh(topPair.sig.theme) + ' · ' + (topPair.sig.date ? topPair.sig.date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '') + '</div>'
+            + '<div class="conv-shared-words">shared: ' + topPair.shared.slice(0,6).join(', ') + '</div>'
+            + '</div></div>'
+            + '<div class="conv-side">'
+            + '<div class="conv-side-label">📚 Highlight</div>'
+            + '<div class="conv-item conv-item-hl">' + eh((topPair.hl.text || '').slice(0, 160)) + '…'
+            + '<div class="conv-item-meta">' + eh(topPair.hl.title) + ' · ' + eh(topPair.hl.author) + '</div>'
+            + '</div></div>'
+            + '</div>' : '')
+          + '</div>';
+      }).join('');
+}
+
+function renderMatrix(result) {
+  var el = document.getElementById('conv-matrix');
+  var matrix = result.matrix;
+  var sigThemes = result.sigThemes;
+  var hlThemes = result.hlThemes;
+
+  // Find max score for color normalization
+  var maxScore = 0;
+  sigThemes.forEach(function(st) {
+    hlThemes.forEach(function(ht) {
+      if (matrix[st] && matrix[st][ht]) maxScore = Math.max(maxScore, matrix[st][ht].score);
+    });
+  });
+
+  var html = '<table><thead><tr><th style="min-width:130px;"></th>'
+    + hlThemes.map(function(ht) {
+        var c = window.RW ? window.RW.themeColor(ht) : '#2A7A52';
+        var short = ht.length > 22 ? ht.slice(0, 20) + '…' : ht;
+        return '<th class="col-header" style="color:' + c + ';" title="' + eh(ht) + '">' + eh(short) + '</th>';
+      }).join('')
+    + '</tr></thead><tbody>'
+    + sigThemes.map(function(st) {
+        var sigColor = getSigThemeColor(st);
+        return '<tr>'
+          + '<th style="color:' + sigColor + ';text-align:right;padding-right:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;" title="' + eh(st) + '">' + eh(st) + '</th>'
+          + hlThemes.map(function(ht) {
+              var cell = matrix[st] && matrix[st][ht] ? matrix[st][ht] : { score: 0, pairs: [] };
+              if (!cell.score) return '<td class="empty" title="No overlap"></td>';
+              var intensity = cell.score / maxScore;
+              var alpha = Math.round(intensity * 220 + 20);
+              var bg = 'rgba(45,95,160,' + (intensity * 0.7 + 0.05).toFixed(2) + ')';
+              var textColor = intensity > 0.5 ? '#fff' : '#1a3a6b';
+              var pairs = cell.pairs.length;
+              return '<td style="background:' + bg + ';color:' + textColor + ';text-align:center;font-family:var(--mono);font-size:9px;font-weight:500;" '
+                + 'title="' + eh(st) + ' ⇄ ' + eh(ht) + ': ' + pairs + ' pairs" '
+                + 'onclick="showConvDetail(' + JSON.stringify(st).replace(/</g,'\\u003c') + ',' + JSON.stringify(ht).replace(/</g,'\\u003c') + ',convResult)">'
+                + pairs + '</td>';
+            }).join('')
+          + '</tr>';
+      }).join('')
+    + '</tbody></table>';
+
+  el.innerHTML = html;
+}
+
+function getSigThemeColor(theme) {
+  // Map signal theme names to colors from TH array
+  var found = null;
+  if (typeof TH !== 'undefined') {
+    TH.forEach(function(t) { if (t.n === theme) found = t.c; });
+  }
+  return found || '#2D5FA0';
+}
+
+var convResult = null;
+var _buildConvOrig = buildConvergence;
+buildConvergence = function() {
+  _buildConvOrig();
+  // Store result after computation
+  setTimeout(function() {
+    var btn = document.getElementById('conv-build-btn');
+    if (btn && btn.textContent.indexOf('Re-analyze') > -1) {
+      // result was stored, compute again to get reference
+      try { convResult = computeConvergence(); } catch(e) {}
+    }
+  }, 500);
+};
+
+function showConvDetail(sigTheme, hlTheme, result) {
+  if (!result) { try { result = computeConvergence(); convResult = result; } catch(e) { return; } }
+  var matrix = result.matrix;
+  var cell = matrix[sigTheme] && matrix[sigTheme][hlTheme];
+  if (!cell || !cell.pairs.length) return;
+
+  var sigColor = getSigThemeColor(sigTheme);
+  var hlColor = window.RW ? window.RW.themeColor(hlTheme) : '#2A7A52';
+
+  document.getElementById('conv-detail-title').innerHTML =
+    '<span style="color:' + sigColor + ';font-weight:500;">' + eh(sigTheme) + '</span>'
+    + ' <span style="color:var(--txt3);">⇄</span> '
+    + '<span style="color:' + hlColor + ';font-weight:500;">' + eh(hlTheme) + '</span>'
+    + ' <span style="color:var(--txt3);">· ' + cell.pairs.length + ' matching pairs</span>';
+
+  // Show top signals on left, top highlights on right (deduplicated)
+  var topSigs = [], topHls = [], seenSigs = {}, seenHls = {};
+  cell.pairs.forEach(function(p) {
+    if (!seenSigs[p.sig.idx]) { seenSigs[p.sig.idx] = true; topSigs.push(p); }
+    if (!seenHls[p.hl.id]) { seenHls[p.hl.id] = true; topHls.push(p); }
+  });
+
+  var sigHtml = '<div class="conv-side conv-side-sig">'
+    + '<div class="conv-side-label">📡 Signals — ' + Object.keys(seenSigs).length + '</div>'
+    + topSigs.slice(0, 8).map(function(p) {
+        var txt = (p.sig.content || '').replace(/https?:\/\/\S+/g,'').trim();
+        return '<div class="conv-item">'
+          + eh(txt.slice(0, 200)) + (txt.length > 200 ? '…' : '')
+          + '<div class="conv-item-meta">' + (p.sig.date ? p.sig.date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '') + '</div>'
+          + '<div class="conv-shared-words">shared: ' + p.shared.slice(0, 8).join(', ') + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  var hlHtml = '<div class="conv-side">'
+    + '<div class="conv-side-label">📚 Highlights — ' + Object.keys(seenHls).length + '</div>'
+    + topHls.slice(0, 8).map(function(p) {
+        return '<div class="conv-item conv-item-hl">'
+          + eh((p.hl.text || '').slice(0, 200)) + ((p.hl.text || '').length > 200 ? '…' : '')
+          + '<div class="conv-item-meta">' + eh(p.hl.title) + ' · ' + eh(p.hl.author) + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  document.getElementById('conv-detail-body').innerHTML = sigHtml + hlHtml;
+  document.getElementById('conv-detail').style.display = 'block';
+  document.getElementById('conv-detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Auto-trigger when convergence tab is opened if data is ready
+var _sw_orig = typeof sw !== 'undefined' ? sw : null;
+if (typeof sw !== 'undefined') {
+  var _swBase = sw;
+  sw = function(tab) {
+    _swBase(tab);
+    if (tab === 'conv') {
+      // Show not-ready message if Readwise not connected
+      var notReady = document.getElementById('conv-not-ready');
+      if (notReady) {
+        if (window.RW && window.RW.isLoaded() && window.ROWS && ROWS.length) {
+          notReady.innerHTML = 'Click <strong>⇄ Analyze convergence</strong> to compute cross-source theme relationships.';
+        } else if (!window.RW || !window.RW.isLoaded()) {
+          notReady.innerHTML = '📚 <a href="#" onclick="event.preventDefault();showReadwiseConnect()" style="color:var(--blue);">Connect Readwise</a> first, then click Analyze convergence.';
+        }
+      }
+    }
+  };
+}
 
 // Integration layer
 
