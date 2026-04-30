@@ -895,6 +895,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
     <!-- Reading tabs -->
     <div class="rw-tabbar">
       <div class="rw-tab active" onclick="rwSw('highlights')">Highlights</div>
+      <div class="rw-tab" onclick="rwSw('books')">By Book</div>
       <div class="rw-tab" onclick="rwSw('threads')">Threads</div>
       <div class="rw-tab" onclick="rwSw('concept')">Concept Search</div>
       <div class="rw-tab" onclick="rwSw('map')">Idea Map</div>
@@ -902,6 +903,9 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
     </div>
     <div class="rw-tp active" id="rw-tp-highlights">
       <div id="rw-main-highlights"></div>
+    </div>
+    <div class="rw-tp" id="rw-tp-books">
+      <div id="rw-main-books"></div>
     </div>
     <div class="rw-tp" id="rw-tp-threads">
       <div id="rw-main-threads"></div>
@@ -4397,13 +4401,7 @@ loadAll();
     if(hlc) hlc.style.display=(S.tab==='highlights')?'contents':'none';
 
     // In embedded mode, render into the active reading tab container
-    var mc=document.getElementById('main');
-    var activeTab=document.querySelector('.rw-tp.active');
-    if(activeTab&&activeTab.id&&activeTab.id.indexOf('rw-tp-')===0){
-      var containerId=activeTab.id.replace('rw-tp-','rw-main-');
-      var embedded=document.getElementById(containerId);
-      if(embedded) mc=embedded;
-    }
+    var mc=document.getElementById(window.RW_RENDER_TARGET||'main')||document.getElementById('main');
 
     if(S.tab==='network'){
       if(NET.animFrame) cancelAnimationFrame(NET.animFrame);
@@ -4450,7 +4448,19 @@ loadAll();
         S.conceptQuery=this.value;
         S.ri=null;
         if(clr) clr.style.display=this.value?'':'none';
-        updateConceptResults();
+        // Update results in-place so input keeps focus
+        var ra=document.getElementById('concept-results-area');
+        if(ra){
+          var res=S.conceptQuery?filtered():[];
+          var bks=Array.from(new Set(res.map(function(h){return h.title;})));
+          ra.innerHTML=!S.conceptQuery?'':res.length
+            ?'<div class="concept-meta">'+res.length+' highlights across '+bks.length+' books</div>'
+             +'<div class="concept-book-pills">'+bks.slice(0,20).map(function(b){
+               return'<span class="thread-book-pill">'+esc(b.length>40?b.slice(0,38)+'…':b)+'</span>';
+             }).join('')+'</div>'
+             +'<div class="flat-wrap">'+res.map(function(x){return hlCard(x,true);}).join('')+'</div>'
+            :'<div class="empty">No highlights match &ldquo;'+esc(S.conceptQuery)+'&rdquo;.</div>';
+        }
       });
     }
     if(clr) clr.addEventListener('click',function(){
@@ -4462,6 +4472,59 @@ loadAll();
       updateConceptResults();
     });
   }
+
+  function renderByBook(){
+    var books={},order=[];
+    HIGHLIGHTS.forEach(function(h){
+      if(!books[h.title]){books[h.title]={author:h.author,hls:[]};order.push(h.title);}
+      books[h.title].hls.push(h);
+    });
+    // Sort by highlight count (most highlights first)
+    order.sort(function(a,b){return books[b].hls.length-books[a].hls.length;});
+    
+    var out='<div style="margin-bottom:14px;">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+      +'<h2 style="font-family:var(--serif,serif);font-size:20px;margin:0;">Browse by Book</h2>'
+      +'<span style="font-family:var(--mono,monospace);font-size:11px;color:var(--muted,#666);">'+HIGHLIGHTS.length+' highlights · '+order.length+' books</span>'
+      +'</div>'
+      +'<input type="text" id="book-browse-search" placeholder="Filter books or authors…" '
+      +'oninput="filterBookBrowse(this.value)" '
+      +'style="width:100%;max-width:480px;padding:8px 12px;border:1px solid var(--bor,#ddd);'
+      +'border-radius:4px;font-family:var(--mono,monospace);font-size:12px;'
+      +'background:var(--sur2,#f5f5f5);outline:none;margin-bottom:12px;">'
+      +'</div>'
+      +'<div id="book-browse-list">'
+      +order.map(function(title){
+        var b=books[title];
+        var color=primaryColor(b.hls[0]);
+        return '<div class="grp book-browse-item">'
+          +'<div class="grp-hdr" onclick="this.parentElement.classList.toggle(\u0027closed\u0027)">'
+          +'<span class="grp-color-dot" style="background:'+color+'"></span>'
+          +'<span class="grp-title">'+esc(title.length>60?title.slice(0,58)+'…':title)+'</span>'
+          +'<span class="grp-author">'+esc(b.author)+'</span>'
+          +'<span class="grp-n">'+b.hls.length+'</span>'
+          +'<span class="chev">▾</span></div>'
+          +'<div class="grp-body">'+b.hls.map(function(h){return hlCard(h,false);}).join('')+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+    return out;
+  }
+
+  function filterBookBrowse(q){
+    q=(q||'').toLowerCase();
+    var container=document.getElementById('book-browse-list');
+    if(!container) return;
+    container.querySelectorAll('.book-browse-item').forEach(function(el){
+      if(!q){el.style.display='';return;}
+      var t=el.querySelector('.grp-title');
+      var a=el.querySelector('.grp-author');
+      var txt=((t?t.textContent:'')+' '+(a?a.textContent:'')).toLowerCase();
+      el.style.display=txt.includes(q)?'':'none';
+    });
+  }
+
+
 
   function updateConceptResults(){
     // Update just the results area without destroying the input
@@ -4621,6 +4684,7 @@ loadAll();
     if (!targetEl) return;
 
     S.tab = tabName === 'highlights' ? 'highlights'
+          : tabName === 'books'     ? 'books'
           : tabName === 'threads'    ? 'threads'
           : tabName === 'concept'    ? 'concept'
           : tabName === 'map'        ? 'map'
@@ -4638,7 +4702,6 @@ loadAll();
     } else if (S.tab === 'concept') {
       targetEl.innerHTML = renderConceptSearch();
       bindConceptEvents();
-      setTimeout(updateConceptResults, 0);
 
     } else if (S.tab === 'network') {
       // Cancel any existing animation
@@ -4659,6 +4722,9 @@ loadAll();
       renderIdeaMap();
       targetEl.id = targetId;
       if (stubMain2) stubMain2.id = 'main';
+
+    } else if (S.tab === 'books') {
+      targetEl.innerHTML = renderByBook();
 
     } else {
       var body = S.view === 'conn'    ? renderConn(f)
@@ -5106,7 +5172,7 @@ function updateReadingLoadedState() {
 // ── Readwise tab switcher ──
 function rwSw(name) {
   document.querySelectorAll('.rw-tab').forEach(function(t, i) {
-    var names = ['highlights','threads','concept','map','network'];
+    var names = ['highlights','books','threads','concept','map','network'];
     t.classList.toggle('active', names[i] === name);
   });
   document.querySelectorAll('.rw-tp').forEach(function(p) {
@@ -5117,7 +5183,8 @@ function rwSw(name) {
 
   // Delegate rendering to reading JS state machine
   if (window.RW && window.RW.isLoaded()) {
-    // Set the reading JS tab state and render into the correct container
+    // Point reading render() at the correct container
+    window.RW_RENDER_TARGET = 'rw-main-' + name;
     renderReadingTab(name);
   }
 }
