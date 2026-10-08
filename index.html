@@ -1229,13 +1229,14 @@ async function loadAll(){
   document.getElementById('errmsg').style.display='none';
   const lmsg=document.getElementById('lmsg');
   try{
-    lmsg.textContent='Fetching LiveFeed…';
-    const lr=await fetchCSV('LiveFeed');
-    lmsg.textContent='Fetching Archive… (LiveFeed: '+lr.length+' rows)';
-    const ar=await fetchCSV('Archive');
-    lmsg.textContent='Fetching Summary… (Archive: '+ar.length+' rows)';
+    // Signals now live in 'Signals_clean' (same A–K layout as Archive). Falls back to Archive.
+    lmsg.textContent='Fetching signals…';
+    const lr=[];
+    let ar=await fetchCSV('Signals_clean');
+    if(String((ar[0]||[])[11]||'').trim()!=='Article title') ar=await fetchCSV('Archive');
+    lmsg.textContent='Fetching Summary… ('+ar.length+' signals)';
     const sr=await fetchCSV('Summary');
-    lmsg.textContent='Processing '+lr.length+' LiveFeed + '+ar.length+' Archive rows…';
+    lmsg.textContent='Processing '+ar.length+' signals…';
 
     ROWS=[];
     for(const r of[...lr.slice(2),...ar.slice(1)]){
